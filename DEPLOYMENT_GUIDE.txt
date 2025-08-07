@@ -1,0 +1,183 @@
+================================================================================
+OPTIMO PROMPT AI - PHASE 2 DEPLOYMENT GUIDE
+================================================================================
+
+This guide walks you through deploying the complete Optimo Prompt Ai system
+with backend infrastructure, payment processing, and premium features.
+
+================================================================================
+1. CLOUDFLARE D1 DATABASE SETUP
+================================================================================
+
+1.1. Create Cloudflare D1 Database:
+   - Login to Cloudflare Dashboard
+   - Go to D1 Database section
+   - Click "Create database"
+   - Name: "optimo_prompt_ai_db"
+   - Copy the database ID for later use
+
+1.2. Initialize Database Schema:
+   - Navigate to cloudflare-worker/ directory
+   - Run: `wrangler d1 execute optimo_prompt_ai_db --file=schema.sql`
+   - This creates all necessary tables and indexes
+
+================================================================================
+2. CLOUDFLARE WORKER DEPLOYMENT
+================================================================================
+
+2.1. Install Wrangler CLI:
+   ```bash
+   npm install -g wrangler
+   wrangler login
+   ```
+
+2.2. Update wrangler.toml:
+   - Replace database_id with your D1 database ID
+   - Set PADDLE_WEBHOOK_SECRET (get from Paddle dashboard)
+   - Set PADDLE_CLIENT_TOKEN (get from Paddle dashboard)
+
+2.3. Deploy Worker:
+   ```bash
+   cd cloudflare-worker/
+   wrangler deploy
+   ```
+
+2.4. Note your Worker URL (e.g., https://optimo-prompt-ai-backend.your-subdomain.workers.dev)
+
+================================================================================
+3. PADDLE PAYMENT INTEGRATION
+================================================================================
+
+3.1. Paddle Account Setup:
+   - Create account at paddle.com
+   - Set up your business profile
+   - Create products:
+     * Monthly Premium ($2/month)
+     * Yearly Premium ($20/year)
+   - Note down product/price IDs
+
+3.2. Configure Webhooks:
+   - In Paddle dashboard, go to Webhooks
+   - Add webhook URL: [YOUR_WORKER_URL]/paddle-webhook
+   - Select events: subscription.created, subscription.updated, subscription.cancelled
+   - Copy webhook secret to Cloudflare Worker environment
+
+3.3. Update Landing Page:
+   - Edit script.js
+   - Replace 'test_YOUR_PADDLE_CLIENT_TOKEN_HERE' with actual token
+   - Replace 'pri_YOUR_MONTHLY_PRICE_ID' with actual price ID
+   - Set environment to 'production' when ready
+
+================================================================================
+4. EXTENSION CONFIGURATION
+================================================================================
+
+4.1. Update Backend URL:
+   - Edit background.js
+   - Replace BACKEND_URL with your actual Cloudflare Worker URL
+
+4.2. Update Landing Page URL:
+   - Edit popup.js and content.js
+   - Replace 'https://optimo-prompt-ai.com' with your actual landing page URL
+
+================================================================================
+5. EXTENSION TESTING
+================================================================================
+
+5.1. Load Extension in Firefox:
+   - Open Firefox
+   - Go to about:debugging
+   - Click "This Firefox" > "Load Temporary Add-on"
+   - Select manifest.json
+
+5.2. Test Freemium Features:
+   - Configure LLM API key in extension settings
+   - Test basic prompt optimization
+   - Verify 15/day limit
+   - Test basic tone options
+
+5.3. Test Premium Features:
+   - Manually set subscription to 'premium' in browser storage for testing
+   - Test advanced tones (Academic, Journalistic)
+   - Test output formats (JSON, List, Table)
+   - Test advanced negative prompting
+   - Verify 50/day limit
+
+5.4. Test Payment Flow:
+   - Reset subscription to 'freemium'
+   - Try accessing premium features (should show upgrade prompts)
+   - Test checkout flow on landing page
+   - Verify webhook processing
+
+================================================================================
+6. PRODUCTION DEPLOYMENT
+================================================================================
+
+6.1. Landing Page Hosting:
+   - Deploy index.html, styles.css, script.js to your web hosting
+   - Update all references to your domain
+   - Configure SSL certificate
+
+6.2. Extension Publishing:
+   - Test thoroughly in Firefox
+   - Create extension package
+   - Submit to Firefox Add-ons (addons.mozilla.org)
+   - Include privacy policy and terms of service
+
+6.3. Paddle Live Mode:
+   - Switch from sandbox to live mode
+   - Update all Paddle configuration in Worker and landing page
+   - Test payment processing with real transactions
+
+================================================================================
+7. MONITORING & MAINTENANCE
+================================================================================
+
+7.1. Cloudflare Analytics:
+   - Monitor Worker performance
+   - Track API usage
+   - Set up alerts for errors
+
+7.2. Database Monitoring:
+   - Monitor D1 database usage
+   - Set up backups if needed
+   - Track subscription conversions
+
+7.3. Extension Updates:
+   - Monitor user feedback
+   - Update extension version in manifest.json
+   - Deploy updates through Firefox Add-ons
+
+================================================================================
+8. SECURITY CONSIDERATIONS
+================================================================================
+
+- API keys are encrypted in D1 database (implement proper encryption in production)
+- Webhook signatures are verified using Paddle secret
+- All API calls use HTTPS
+- User data is stored locally in extension + encrypted in backend
+- No sensitive data is logged in production
+
+================================================================================
+9. SCALING CONSIDERATIONS
+================================================================================
+
+- Cloudflare Worker: Scales automatically, monitor usage
+- D1 Database: Has usage limits, consider paid plan for high volume
+- Paddle: Handles payment scaling
+- Landing page: Use CDN for better performance globally
+
+================================================================================
+10. TROUBLESHOOTING
+================================================================================
+
+Common Issues:
+- CORS errors: Check Cloudflare Worker CORS headers
+- Webhook not receiving: Verify Paddle webhook URL and secret
+- Extension not loading: Check manifest.json permissions
+- API calls failing: Verify backend URL and network connectivity
+
+================================================================================
+
+For support and updates, monitor the extension logs and Cloudflare Worker logs.
+Test thoroughly in staging before deploying to production.
